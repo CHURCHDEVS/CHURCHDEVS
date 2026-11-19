@@ -1,4 +1,4 @@
-<img src="assets/portada.png" alt="CHURCHDEVS · Software con propósito para territorios reales · Ciénaga, Magdalena, Colombia" width="100%">
+<img src="assets/portada.svg" alt="CHURCHDEVS: software con propósito para territorios reales, desde Ciénaga, Magdalena, Colombia" width="100%">
 
 ### Construyo software que se usa en la calle, no solo en la oficina.
 
@@ -41,3 +41,5 @@ mapas reales, 3D en la web y datos ordenados para decidir mejor.
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)
 
 <sub>La portada dibuja los 56 barrios reales de Ciénaga, cada uno con su color.</sub>
+
+<img src="assets/pie.svg" alt="Olas del mar Caribe: hecho en Ciénaga, Magdalena" width="100%">
