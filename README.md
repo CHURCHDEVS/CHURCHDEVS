@@ -1,8 +1,6 @@
 <img src="assets/portada.svg" alt="CHURCHDEVS, desarrollador de software: apps con IA que recopilan, ordenan y monitorean información" width="100%">
 
-Desarrollo aplicaciones con inteligencia artificial para equipos que necesitan saber qué está pasando:
-herramientas que **recogen información de la web y de documentos, la ordenan en bases de datos y avisan cuando algo
-cambia**. 
+Desarrollador de software enfocado en IA, automatización, ingeniería de datos y sistemas inteligentes
 
 ### Herramientas
 
