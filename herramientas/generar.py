@@ -4,15 +4,13 @@
 Uso:  uv run --with fonttools --with brotli --with pillow python -I herramientas/generar.py
 Salida: assets/portada.svg (cabecera animada) y assets/avatar.png (foto de perfil, 1000×1000).
 
-Concepto «la señal entre el ruido»: puntos de datos sueltos (lo que se recopila), columnas
-ordenadas (lo que se ordena), una línea de tendencia y una alerta amarilla (lo que se monitorea).
-- Una sola fuente, Archivo (OFL, herramientas/fuentes/), convertida a trazos: GitHub muestra los
-  SVG como imagen y no carga fuentes.
-- Una sola secuencia de entrada (~1,7 s) y después solo el pulso de la alerta y la píldora que
-  rota los servicios. Con «reducir movimiento» no se mueve nada y se ve el estado final.
+Concepto «la curva»: la curva de animación con la que se mueve una interfaz bien hecha, dibujada
+como en un editor (anclas y manijas), y el punto amarillo del avatar recorriéndola con esa misma
+curva. Una sola fuente, Archivo (OFL, herramientas/fuentes/), convertida a trazos: GitHub muestra
+los SVG como imagen y no carga fuentes. Entrada de ~1,5 s; después solo el recorrido del punto
+cada 4,2 s. Con «reducir movimiento» no se mueve nada y se ve el estado final.
 """
 import io
-import random
 from pathlib import Path
 
 from fontTools.pens.svgPathPen import SVGPathPen
@@ -24,21 +22,17 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 RAIZ = Path(__file__).resolve().parent.parent
 ARCHIVO = RAIZ / "herramientas/fuentes/archivo-latin-wdth-normal.woff2"
 
-# Paleta: cobalto y amarillo señal (dato frío → señal cálida)
-FONDO, LUZ, HUESO, CIELO, PUNTO, SENAL = "#0E1A5C", "#2440C4", "#F4F2EC", "#B4C6FF", "#7F97F0", "#FFC93C"
+# Paleta: cobalto y amarillo señal
+FONDO, LUZ, HUESO, CIELO, SENAL = "#0E1A5C", "#2440C4", "#F4F2EC", "#B4C6FF", "#FFC93C"
 CURVA, ENFASIS = "cubic-bezier(.2,0,0,1)", "cubic-bezier(.05,.7,.1,1)"
-
-SERVICIOS = ["Apps con IA", "Automatización", "Web scraping", "OSINT",
-             "Seguimiento y monitoreo", "Marketing con datos"]
-# Una serie que crece con un salto al final: es ilustración, no una métrica publicada
-SERIE = [4, 5, 4, 6, 5, 5, 7, 6, 8, 7, 9, 12]
+P1, P2 = (0.05, 0.7), (0.1, 1.0)  # la curva que se dibuja es la misma ENFASIS
 
 
 def fuente(peso: int, ancho: int) -> TTFont:
     return instancer.instantiateVariableFont(TTFont(str(ARCHIVO)), {"wght": peso, "wdth": ancho})
 
 
-NOMBRE_F, ROL_F, TESIS_F, PILDORA_F = fuente(800, 62), fuente(600, 100), fuente(500, 100), fuente(700, 100)
+NOMBRE_F, ROL_F, FRASE_F = fuente(800, 62), fuente(600, 100), fuente(500, 100)
 
 
 def ancho(f: TTFont, texto: str, tam: float) -> float:
@@ -61,81 +55,75 @@ def trazo(f: TTFont, texto: str, x: float, y: float, tam: float) -> str:
     return " ".join(p for p in partes if p)
 
 
-def estilo(n_columnas: int) -> str:
-    # pasos que se acortan (no metrónomo): la cascada de columnas dura < 500 ms
-    retrasos, t = [], 360
-    for i in range(n_columnas):
-        retrasos.append(t)
-        t += max(22, 52 - i * 3)
-    cols = "".join(f".k{i}{{animation-delay:{d}ms}}" for i, d in enumerate(retrasos))
-    ciclo = len(SERVICIOS) * 2.5
-    a, b, c = 1.67, 100 / len(SERVICIOS) - 1.67, 100 / len(SERVICIOS)
+def estilo(lado: int) -> str:
     return f"""<style>
 @keyframes sube{{from{{opacity:0;transform:translateY(14px)}}}}
 @keyframes aparece{{from{{opacity:0}}}}
 @keyframes traza{{from{{stroke-dashoffset:1}}}}
-@keyframes alerta{{from{{opacity:0;transform:scale(.4)}}}}
-@keyframes pulso{{0%{{opacity:0;transform:scale(.5)}}10%{{opacity:.9}}60%,100%{{opacity:0;transform:scale(2.4)}}}}
-@keyframes rota{{0%{{opacity:0}}{a:.2f}%,{b:.2f}%{{opacity:1}}{c:.2f}%,100%{{opacity:0}}}}
+@keyframes manija{{from{{opacity:0;transform:scale(.2)}}}}
+@keyframes avanza{{0%{{transform:translateX(0);animation-timing-function:linear}}45%,100%{{transform:translateX({lado}px)}}}}
+@keyframes sube_y{{0%{{transform:translateY(0);animation-timing-function:{ENFASIS}}}45%,100%{{transform:translateY(-{lado}px)}}}}
+@keyframes asoma{{0%{{opacity:0}}5%,82%{{opacity:1}}94%,100%{{opacity:0}}}}
 .t{{animation:sube .44s {CURVA} both}}
 .n{{animation:sube .6s {ENFASIS} .12s both}}
 .r{{animation:aparece .5s {CURVA} both}}
-.k{{animation:sube .44s {CURVA} both}}{cols}
-.l{{stroke-dasharray:1;stroke-dashoffset:0;animation:traza .6s {CURVA} 1s both}}
-.a{{transform-box:fill-box;transform-origin:center;animation:alerta .28s {CURVA} 1.5s both}}
-.p{{transform-box:fill-box;transform-origin:center;opacity:0;animation:pulso 4s {CURVA} 1.9s infinite both}}
-.c{{opacity:0;animation:rota {ciclo:g}s linear infinite both}}
-@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}.c0{{opacity:1}}}}
+.h{{transform-box:fill-box;transform-origin:center;animation:manija .44s {CURVA} both}}
+.l{{stroke-dasharray:1;stroke-dashoffset:0;animation:traza .7s {CURVA} .75s both}}
+.bx{{transform:translateX({lado}px);animation:avanza 4.2s 1.6s infinite both}}
+.by{{transform:translateY(-{lado}px);animation:sube_y 4.2s 1.6s infinite both}}
+.b{{animation:asoma 4.2s linear 1.6s infinite both}}
+@media (prefers-reduced-motion:reduce){{*{{animation:none!important}}}}
 </style>"""
 
 
 def portada() -> str:
     w, h, x0 = 1000, 380, 52
-    rnd = random.Random(7)
-    # el ruido: puntos sueltos y tenues en toda la zona de la derecha
-    ruido = "".join(
-        f'<circle cx="{rnd.uniform(600, 975):.1f}" cy="{rnd.uniform(34, 350):.1f}" r="{rnd.uniform(1.6, 3.4):.1f}"/>'
-        for _ in range(78))
-    # el orden: columnas de puntos (una por periodo); la última es la señal
-    base, paso_y, x_ini, paso_x = 332, 21, 642, 27.5
-    cols, cima = [], []
-    for i, v in enumerate(SERIE):
-        x = x_ini + i * paso_x
-        color = SENAL if i == len(SERIE) - 1 else PUNTO
-        puntos = "".join(f'<circle cx="{x:.1f}" cy="{base - j * paso_y}" r="6"/>' for j in range(v))
-        cols.append(f'<g class="k k{i}" fill="{color}">{puntos}</g>')
-        cima.append((x, base - (v - 1) * paso_y))
-    linea = "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in cima)
-    ax, ay = cima[-1]
-    ay -= 30  # la alerta flota sobre la última columna
+    # el lienzo de la curva: un cuadrado con su cuadrícula, a la derecha
+    lado, gx, gy = 260, 680, 60
+    base_y = gy + lado
+    a0, a1 = (gx, base_y), (gx + lado, gy)
+    m1 = (gx + P1[0] * lado, base_y - P1[1] * lado)
+    m2 = (gx + P2[0] * lado, base_y - P2[1] * lado)
+    paso = lado / 5
+    rejilla = "".join(
+        f'<path d="M{gx + i * paso:.1f} {gy}V{base_y}M{gx} {gy + i * paso:.1f}H{gx + lado}"/>' for i in range(6))
+    curva = f"M{a0[0]} {a0[1]} C{m1[0]:.1f} {m1[1]:.1f} {m2[0]:.1f} {m2[1]:.1f} {a1[0]} {a1[1]}"
+
+    def manija(ancla, punta, retraso):
+        return (f'<g class="h" style="animation-delay:{retraso}s">'
+                f'<path d="M{ancla[0]:.1f} {ancla[1]:.1f}L{punta[0]:.1f} {punta[1]:.1f}" stroke="{CIELO}" stroke-width="2"/>'
+                f'<circle cx="{punta[0]:.1f}" cy="{punta[1]:.1f}" r="7" fill="{FONDO}" stroke="{CIELO}" stroke-width="2.5"/></g>')
+
+    def ancla(p, retraso):
+        return (f'<rect class="h" style="animation-delay:{retraso}s" x="{p[0] - 8}" y="{p[1] - 8}" width="16" height="16" '
+                f'rx="3" fill="{HUESO}"/>')
+
     nombre_tam = 118
-    while ancho(NOMBRE_F, "CHURCHDEVS", nombre_tam) > 555:
+    while ancho(NOMBRE_F, "CHURCHDEVS", nombre_tam) > 560:
         nombre_tam -= 2
-    pildoras = []
-    for i, s in enumerate(SERVICIOS):
-        ancho_p = ancho(PILDORA_F, s, 20) + 36
-        pildoras.append(
-            f'<g class="c c{i}" style="animation-delay:{0.6 + i * 2.5:g}s">'
-            f'<rect x="{x0}" y="308" width="{ancho_p:.0f}" height="40" rx="20" fill="{SENAL}"/>'
-            f'<path fill="{FONDO}" d="{trazo(PILDORA_F, s, x0 + 18, 335, 20)}"/></g>')
-    alt = "CHURCHDEVS, desarrollador de software: apps con IA que recopilan, ordenan y monitorean información"
+    frase_tam = 28
+    lineas = ["Enfocado en IA, automatización,", "ingeniería de datos y sistemas inteligentes."]
+    while max(ancho(FRASE_F, linea, frase_tam) for linea in lineas) > 590:
+        frase_tam -= 1
+    alt = ("CHURCHDEVS, desarrollador web creativo: software enfocado en IA, automatización, "
+           "ingeniería de datos y sistemas inteligentes")
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img" '
-        f'aria-label="{alt}"><title>{alt}</title>{estilo(len(SERIE))}'
+        f'aria-label="{alt}"><title>{alt}</title>{estilo(lado)}'
         f'<defs><radialGradient id="luz" cx="88%" cy="-8%" r="80%"><stop offset="0" stop-color="{LUZ}"/>'
         f'<stop offset="1" stop-color="{FONDO}" stop-opacity="0"/></radialGradient></defs>'
         f'<rect width="{w}" height="{h}" rx="20" fill="{FONDO}"/><rect width="{w}" height="{h}" rx="20" fill="url(#luz)"/>'
-        f'<g class="r" fill="{CIELO}" fill-opacity=".22">{ruido}</g>'
-        f'{"".join(cols)}'
-        f'<path class="l" pathLength="1" d="{linea}" fill="none" stroke="{HUESO}" stroke-width="3" '
-        f'stroke-linejoin="round" stroke-linecap="round"/>'
-        f'<circle class="p" cx="{ax:.1f}" cy="{ay:.1f}" r="12" fill="none" stroke="{SENAL}" stroke-width="2.5"/>'
-        f'<circle class="a" cx="{ax:.1f}" cy="{ay:.1f}" r="9" fill="{SENAL}" stroke="{FONDO}" stroke-width="3"/>'
-        f'<path class="t" style="animation-delay:.05s" fill="{CIELO}" d="{trazo(ROL_F, "Desarrollador de software", x0, 84, 24)}"/>'
-        f'<path class="n" fill="{HUESO}" d="{trazo(NOMBRE_F, "CHURCHDEVS", x0 - 3, 190, nombre_tam)}"/>'
-        f'<path class="t" style="animation-delay:.3s" fill="{HUESO}" d="{trazo(TESIS_F, "Apps con IA que recopilan, ordenan", x0, 242, 31)}"/>'
-        f'<path class="t" style="animation-delay:.36s" fill="{HUESO}" d="{trazo(TESIS_F, "y monitorean información.", x0, 282, 31)}"/>'
-        f'{"".join(pildoras)}</svg>')
+        f'<g class="r" fill="none" stroke="{CIELO}" stroke-opacity=".16" stroke-width="1">{rejilla}</g>'
+        f'{manija(a0, m1, .45)}{manija(a1, m2, .55)}'
+        f'<path class="l" pathLength="1" d="{curva}" fill="none" stroke="{HUESO}" stroke-width="4" stroke-linecap="round"/>'
+        f'{ancla(a0, .35)}{ancla(a1, .4)}'
+        f'<g class="bx"><g class="by"><circle class="b" cx="{a0[0]}" cy="{a0[1]}" r="13" fill="{SENAL}" '
+        f'stroke="{FONDO}" stroke-width="4"/></g></g>'
+        f'<path class="t" style="animation-delay:.05s" fill="{CIELO}" d="{trazo(ROL_F, "Desarrollador web creativo", x0, 98, 25)}"/>'
+        f'<path class="n" fill="{HUESO}" d="{trazo(NOMBRE_F, "CHURCHDEVS", x0 - 3, 204, nombre_tam)}"/>'
+        f'<path class="t" style="animation-delay:.3s" fill="{HUESO}" d="{trazo(FRASE_F, lineas[0], x0, 262, frase_tam)}"/>'
+        f'<path class="t" style="animation-delay:.36s" fill="{HUESO}" d="{trazo(FRASE_F, lineas[1], x0, 300, frase_tam)}"/>'
+        f'</svg>')
 
 
 def letra_png(peso: int, ancho_eje: int, tam: int) -> ImageFont.FreeTypeFont:
@@ -148,7 +136,7 @@ def letra_png(peso: int, ancho_eje: int, tam: int) -> ImageFont.FreeTypeFont:
 
 
 def avatar() -> Image.Image:
-    """Monograma CD con el punto de señal; pensado para el recorte circular de GitHub."""
+    """Monograma CD con el punto amarillo; pensado para el recorte circular de GitHub."""
     lado = 1000
     img = Image.new("RGB", (lado, lado), FONDO)
     luz = Image.new("L", (lado, lado), 0)

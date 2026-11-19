@@ -1,4 +1,4 @@
-<img src="assets/portada.svg" alt="CHURCHDEVS, desarrollador de software: apps con IA que recopilan, ordenan y monitorean información" width="100%">
+<img src="assets/portada.svg" alt="CHURCHDEVS, desarrollador web creativo: software enfocado en IA, automatización, ingeniería de datos y sistemas inteligentes" width="100%">
 
 Desarrollador de software enfocado en IA, automatización, ingeniería de datos y sistemas inteligentes
 
